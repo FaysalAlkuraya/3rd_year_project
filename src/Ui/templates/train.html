@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Train a Model</h2>
+<form method="POST" enctype="multipart/form-data" class="row g-3">
+
+  <div class="col-md-6">
+    <label for="data_file" class="form-label">Data File (CSV)</label>
+    <input type="file" name="data_file" id="data_file" class="form-control"/>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Model (-model)</label>
+    <input type="text" name="model" class="form-control" placeholder="e.g. dt_sklearn" />
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Responses (-resp)</label>
+    <input type="text" name="resp" class="form-control" placeholder="e.g. y1,y2"/>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Features (-feat)</label>
+    <input type="text" name="feat" class="form-control" placeholder="e.g. x1,x2,p1,p2"/>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Save Model?</label>
+    <select name="save_model" class="form-select">
+      <option value="f" selected>No</option>
+      <option value="t">Yes</option>
+    </select>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Model Name</label>
+    <input type="text" name="model_name" class="form-control" value="my_model"/>
+  </div>
+
+  <div class="col-12">
+    <button type="submit" class="btn btn-primary">Train</button>
+  </div>
+</form>
+{% endblock %}

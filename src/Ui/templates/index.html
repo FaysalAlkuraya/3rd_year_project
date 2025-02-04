@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+  <h1>Welcome to SMLP Dashboard</h1>
+  <p class="lead">A web interface for training, predicting, exploring, and DOE with SMLP.</p>
+
+  <div class="mt-4">
+    <a class="btn btn-primary" href="{{ url_for('train') }}">Train</a>
+    <a class="btn btn-success" href="{{ url_for('predict') }}">Predict</a>
+    <a class="btn btn-warning" href="{{ url_for('explore') }}">Explore</a>
+    <a class="btn btn-info" href="{{ url_for('doe') }}">DOE</a>
+  </div>
+</div>
+{% endblock %}
