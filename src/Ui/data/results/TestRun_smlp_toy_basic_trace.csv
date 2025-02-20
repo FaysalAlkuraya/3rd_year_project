@@ -1,5 +1,0 @@
-stage,solver,p1,p2,x1,x2,y1,y2
-interface_consistency,sat,2,3,10,0
-model_consistency,sat,2,3,10,0,499791472247068216593/720575940379279360000,601/50
-synthesis_feasibility
-synthesis,synthesis_feasibility
