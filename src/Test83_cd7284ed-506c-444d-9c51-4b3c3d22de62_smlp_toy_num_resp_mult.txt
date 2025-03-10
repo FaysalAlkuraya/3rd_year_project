@@ -1,0 +1,17 @@
+
+smlp_logger - INFO - Model exploration specification:
+{'version': '1.1', 'spec': [{'label': 'y1', 'type': 'response', 'range': 'float'}, {'label': 'y2', 'type': 'response', 'range': 'float'}, {'label': 'x', 'type': 'input', 'range': 'float', 'bounds': [-2, None]}, {'label': 'p1', 'type': 'knob', 'range': 'float', 'rad-rel': Fraction(1, 10), 'grid': [2, 4, 7], 'bounds': [4, 8]}, {'label': 'p2', 'type': 'knob', 'range': 'float', 'rad-abs': Fraction(1, 5), 'bounds': [3, 7]}]}
+
+smlp_logger - INFO - Executing run_smlp.py script: Start
+
+smlp_logger - INFO - Running SMLP in mode "optimize": Start
+
+smlp_logger - INFO - Computed spec global constraint expressions:
+
+smlp_logger - INFO - Global alpha : None
+
+smlp_logger - INFO - Global beta  : None
+
+smlp_logger - INFO - Radii  theta : {'p1': {'rad-abs': None, 'rad-rel': Fraction(1, 10)}, 'p2': {'rad-abs': Fraction(1, 5), 'rad-rel': None}}
+
+smlp_logger - INFO - Delta  const : {'delta_abs': 0.0, 'delta_rel': 0.01}

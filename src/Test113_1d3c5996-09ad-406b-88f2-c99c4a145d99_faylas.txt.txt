@@ -1,0 +1,33 @@
+
+smlp_logger - INFO - Model exploration specification:
+{'version': '1.2', 'variables': [{'label': 'y1', 'interface': 'output', 'type': 'real'}, {'label': 'y2', 'interface': 'output', 'type': 'real'}, {'label': 'x1', 'interface': 'input', 'type': 'real', 'range': [0, 10]}, {'label': 'x2', 'interface': 'input', 'type': 'int', 'range': [-1, 1]}, {'label': 'p1', 'interface': 'knob', 'type': 'real', 'range': [0, 10], 'rad-rel': Fraction(1, 10), 'grid': [2, 4, 7]}, {'label': 'p2', 'interface': 'knob', 'type': 'int', 'range': [3, 7], 'rad-abs': Fraction(1, 5)}], 'alpha': 'p2<5 and x1==10 and x2<12', 'beta': 'y1>=4 and y2>=8', 'eta': 'p1==4 or (p1==8 and p2 > 3)', 'assertions': {'assert1': '(y2**3+p2)/2>6', 'assert2': 'y1>=0', 'assert3': 'y2>0'}, 'objectives': {'objective1': '(y1+y2)/2', 'objective2': 'y1'}}
+
+smlp_logger - INFO - Executing run_smlp.py script: Start
+
+smlp_logger - INFO - Running SMLP in mode "optimize": Start
+
+smlp_logger - INFO - Computed spec global constraint expressions:
+
+smlp_logger - INFO - Global alpha : p2<5 and x1==10 and x2<12
+
+smlp_logger - INFO - Global beta  : y1>=4 and y2>=8
+
+smlp_logger - INFO - Radii  theta : {'p1': {'rad-abs': None, 'rad-rel': Fraction(1, 10)}, 'p2': {'rad-abs': Fraction(1, 5), 'rad-rel': None}}
+
+smlp_logger - INFO - Delta  const : {'delta_abs': 0.0, 'delta_rel': 0.01}
+
+smlp_logger - INFO - Assertion assert1: (y2**3+p2)/2>6
+
+smlp_logger - INFO - Assertion assert2: y1>=0
+
+smlp_logger - INFO - Assertion assert3: y2>0
+
+smlp_logger - INFO - Objective objective1: (y1+y2)/2
+
+smlp_logger - INFO - Objective objective2: y1
+
+smlp_logger - INFO - PREPARE DATA FOR MODELING
+
+smlp_logger - INFO - Preparing training data for modeling: start
+
+smlp_logger - INFO - loading training data

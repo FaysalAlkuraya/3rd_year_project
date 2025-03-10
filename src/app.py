@@ -7,19 +7,6 @@ import os
 import sys
 import uuid
 from flask_session import Session
-# --------------------------------------------------------------------------
-# Dynamically add smlp/src directory to sys.path so we can import smlp_py
-# # # --------------------------------------------------------------------------
-# current_file_path = os.path.abspath(__file__)  # Path to this file (app.py)
-# src_dir = os.path.abspath(os.path.join(os.path.dirname(current_file_path), '..'))  # Path to ../ (which should be /smlp/src if your structure is /smlp/src/Ui)
-# if src_dir not in sys.path:  
-#     sys.path.insert(0, src_dir)
-
-# Now import it
-from smlp_py.smlp_flows import SmlpFlows  # Import the real SMLP logic
-
-
-# from .smlp_py.smlp_flows import SmlpFlows  # Import the real SMLP logic
 
 # --------------------------------------------------------------------------
 # Flask App Setup
@@ -50,21 +37,9 @@ def call_smlp_api( argument_list):
 
     cmd_string = " ".join(argument_list)  # Convert list to string
 
-    # print("DEBUG: Final SMLP Command String ->", cmd_string)
-    # print("DEBUG: Final SMLP Command  list ->", argument_list)
-
-    print("\n--- DEBUG INFO ---")
-    print("Current Working Directory:", os.getcwd())  # Where Flask is running from
-    print("Process ID (PID):", os.getpid())  # Unique identifier for process
-    print("Final SMLP Command String ->", cmd_string)
-    print("Final SMLP Command List ->", argument_list)
-    print("-------------------\n")
 
     cwd_dir = os.path.abspath("../regr_smlp/code/")
     try:
-        # flow = SmlpFlows(argument_list)
-        # output = flow.smlp_flow()
-        # return output
         result = subprocess.run(
             argument_list,
             capture_output=True,
@@ -90,49 +65,64 @@ def home():
 # --------------------------------------------------------------------------
 @app.route('/train', methods=['GET', 'POST'])
 def train():
-    """
-    Provide a form to pick data, model, hyperparams.
-    On POST, calls call_smlp_api(mode='train').
-    """
     if request.method == 'POST':
-        # Gather form inputs
+        # Handle uploaded files
         data_file = request.files.get('data_file')
-        model = request.form.get('model')
-        resp = request.form.get('resp')
-        feat = request.form.get('feat')
-        save_model = request.form.get('save_model', 'f')
-        model_name = request.form.get('model_name', 'my_model')
-        # ... add more as needed (scale_feat, scale_resp, etc.)
-
-        # Save the uploaded data
         dataset_path = None
+        
         if data_file and data_file.filename:
-            filename = f"{uuid.uuid4()}_{data_file.filename}"
-            dataset_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            dataset_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{uuid.uuid4()}_{data_file.filename}")
             data_file.save(dataset_path)
+        
+        # Function to add arguments dynamically
+        def add_arg(flag, value):
+            if value is not None and value != "":
+                arguments.extend([flag, str(value)])
+        
+        # Build command arguments dynamically
+        arguments = ['python3', os.path.abspath("../src/run_smlp.py")]
+        
+        if not dataset_path :
+            return "Error: Missing required dataset or spec file", 400
 
-        # Build arguments for SMLP
-        arguments = []
-        if dataset_path:
-            # Possibly remove ".csv" if SMLP requires that
-            base_name, ext = os.path.splitext(dataset_path)
-            arguments += ["-data", base_name]
-
-        arguments += ["-model", model]
-        arguments += ["-resp", resp]
-        arguments += ["-feat", feat]
-
-        if save_model == 't':
-            arguments += ["-save_model", "t", "-model_name", model_name]
-
-        # Call SMLP
-        output = call_smlp_api("train", arguments)
+        # Required arguments
+      
+        add_arg("-data", os.path.abspath(dataset_path))
+        add_arg("-out_dir", request.form.get('out_dir_val', './'))
+        add_arg("-pref", request.form.get('pref_val', 'TestTrain'))
+        add_arg("-mode", "train")
+        add_arg("-model", request.form.get('model'))
+        add_arg("-dt_sklearn_max_depth", request.form.get('dt_sklearn_max_depth'))
+        add_arg("-mrmr_pred", request.form.get('mrmr_pred'))
+        add_arg("-resp", request.form.get('resp'))
+        add_arg("-feat", request.form.get('feat'))
+        
+        # Optional arguments
+        add_arg("-save_model", request.form.get('save_model'))
+        add_arg("-model_name", request.form.get('model_name'))
+        add_arg("-scale_feat", request.form.get('scale_feat'))
+        add_arg("-scale_resp", request.form.get('scale_resp'))
+        add_arg("-dt_sklearn_max_depth", request.form.get('dt_sklearn_max_depth'))
+        add_arg("-train_split", request.form.get('train_split'))
+        add_arg("-seed", request.form.get('seed_val'))
+        add_arg("-plots", request.form.get('plots'))
+        
+        # Additional command (without flag)
+        additional_command = request.form.get('additional_command')
+        if additional_command:
+            arguments.append(additional_command)
+        
+        # Debugging: Print the command before execution
+        print("DEBUG: Final SMLP Command ->", " ".join(arguments))
+        
+        # Call SMLP API
+        output = call_smlp_api(arguments)
         session['output'] = output
         return redirect(url_for('results'))
-
+    
     return render_template('train.html')
 
-import smlp_py
+
 
 # --------------------------------------------------------------------------
 # 3) PREDICT
@@ -184,66 +174,83 @@ def predict():
 @app.route('/explore', methods=['GET', 'POST'])
 def explore():
     modes_list = ['certify', 'query', 'verify', 'synthesize', 'optimize', 'optsyn']
-    
+
     if request.method == 'POST':
         chosen_mode = request.form.get('explore_mode', '')
 
         if chosen_mode not in modes_list:
             return "Error: Invalid mode selected", 400
 
-        # Get files from the form
-        dataset_path = "../regr_smlp/data/smlp_toy_basic"
-        spec_path = "../regr_smlp/specs/smlp_toy_basic.spec"
+        # Handle uploaded files
+        data_file = request.files.get('data_file')
+        spec_file = request.files.get('spec_file')
+
+        dataset_path = None
+        spec_path = None
+
+        # Save dataset file
+        if data_file and data_file.filename:
+            dataset_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{uuid.uuid4()}_{data_file.filename}")
+            data_file.save(dataset_path)
+
+        # Save spec file
+        if spec_file and spec_file.filename:
+            spec_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{uuid.uuid4()}_{spec_file.filename}")
+            spec_file.save(spec_path)
+
+        # Ensure at least one required file is uploaded
+        if not dataset_path or not spec_path:
+            return "Error: Missing required dataset or spec file", 400
+
+        # Build command arguments dynamically (only add non-empty values)
+        arguments = ['python3', os.path.abspath("../src/run_smlp.py")]
+
+        def add_arg(flag, value):
+            """Helper function to add arguments only if they are not empty."""
+            if value is not None and value != "":
+                arguments.extend([flag, str(value)])
+
+        # Required arguments
+        add_arg("-data", os.path.abspath(dataset_path))
+        add_arg("-out_dir", request.form.get('out_dir_val', './'))
+        add_arg("-pref", request.form.get('pref_val', 'Test113'))
+        add_arg("-mode", chosen_mode)
+        add_arg("-spec", os.path.abspath(spec_path))
+
+        # Optional arguments (Only included if user provides a value)
+        add_arg("-pareto", request.form.get('pareto'))
+        add_arg("-resp", request.form.get('resp_expr'))
+        add_arg("-feat", request.form.get('feat_expr'))
+        add_arg("-model", request.form.get('model_expr'))
+        add_arg("-dt_sklearn_max_depth", request.form.get('dt_sklearn_max_depth'))
+        add_arg("-mrmr_pred", request.form.get('mrmr_pred'))
+        add_arg("-epsilon", request.form.get('epsilon'))
+        add_arg("-delta_rel", request.form.get('delta_rel'))
+        add_arg("-save_model_config", request.form.get('save_model_config'))
+
+        # Ensure missing fields are included
+        add_arg("-plots", request.form.get('plots'))
+        add_arg("-log_time", request.form.get('log_time')) 
+        add_arg("-seed", request.form.get('seed_val'))
+        add_arg("-objv_names", request.form.get('objv_names'))
+        add_arg("-objv_exprs", request.form.get('objv_exprs'))
 
 
-        # # Save data file (only if provided)
-        # if data_file and data_file.filename:
-        #     dataset_path = os.path.join(DATA_DIR, data_file.filename)
-        #     data_file.save(dataset_path)
-
-        # # Save spec file (only if provided)
-        # if spec_file and spec_file.filename:
-        #     spec_path = os.path.join(SPEC_DIR, spec_file.filename)
-        #     spec_file.save(spec_path)
-
-        # Check if at least one required file is uploaded
-        if not dataset_path and not spec_path:
-            return "Error: No valid dataset or spec file found", 400
-
-        # Build command arguments list dynamically
-        arguments = [
-            'python3', os.path.abspath("../src/run_smlp.py"),
-            "-data", os.path.abspath(dataset_path),
-            "-out_dir", os.path.abspath(request.form.get('out_dir_val', './')),
-            "-pref", request.form.get('pref_val', 'Test113'),
-            "-mode", chosen_mode, 
-            "-pareto", request.form.get('pareto', 't'),
-            "-resp", request.form.get('resp_expr', 'y1,y2'),
-            "-feat", request.form.get('feat_expr', 'x1,x2,p1,p2'),
-            "-model", request.form.get('model_expr', 'dt_sklearn'),
-            "-dt_sklearn_max_depth", request.form.get('dt_sklearn_max_depth', '15'),
-            "-mrmr_pred", request.form.get('mrmr_pred', '0'),
-            "-epsilon", request.form.get('epsilon', '0.05'),
-            "-delta_rel", request.form.get('delta_rel', '0.01'),
-            "-save_model", request.form.get('save_model', 't'),
-            "-model_name", request.form.get('model_name', 'test113_model'),
-            "-save_model_config", request.form.get('save_model_config', 't'),
-            "-plots", request.form.get('plots_opt', 'f'),
-            "-seed", request.form.get('seed_val', '10'),
-            "-log_time", request.form.get('log_time', 'f'),
-            "-spec", os.path.abspath(spec_path)
-        ]
+        # Additional command (without flag)
+        additional_command = request.form.get('additional_command')
+        if additional_command:
+            arguments.append(additional_command)
 
         # Debugging: Print the command before execution
-        # print("DEBUG: Final SMLP Command ->", arguments)
+        print("DEBUG: Final SMLP Command ->", " ".join(arguments))
 
         # Call SMLP API
         output = call_smlp_api(arguments)
-        # print("DEBUG: EXPLORE SMLP Output ->", output)
         session['output'] = output
         return redirect(url_for('results'))
 
     return render_template('exploration.html', modes=modes_list)
+
 
 # --------------------------------------------------------------------------
 # 5) DOE
